@@ -7,7 +7,91 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createArticle = `-- name: CreateArticle :one
+INSERT INTO articles (
+    slug,
+    title,
+    description,
+    contents,
+    cover_image,
+    published_at,
+    tags,
+    category_id,
+    status,
+    type,
+    estimated_read_time
+)
+VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+)
+RETURNING
+    id, slug, title, description, contents, cover_image, published_at,
+    tags, category_id, status, type, estimated_read_time, created_at
+`
+
+type CreateArticleParams struct {
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+}
+
+func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error) {
+	row := q.db.QueryRow(ctx, createArticle,
+		arg.Slug,
+		arg.Title,
+		arg.Description,
+		arg.Contents,
+		arg.CoverImage,
+		arg.PublishedAt,
+		arg.Tags,
+		arg.CategoryID,
+		arg.Status,
+		arg.Type,
+		arg.EstimatedReadTime,
+	)
+	var i Article
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Description,
+		&i.Contents,
+		&i.CoverImage,
+		&i.PublishedAt,
+		&i.Tags,
+		&i.CategoryID,
+		&i.Status,
+		&i.Type,
+		&i.EstimatedReadTime,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const deleteArticle = `-- name: DeleteArticle :execrows
+DELETE FROM articles
+WHERE id = $1
+`
+
+func (q *Queries) DeleteArticle(ctx context.Context, id pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteArticle, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
 
 const getArticleBySlug = `-- name: GetArticleBySlug :one
 SELECT
@@ -48,6 +132,48 @@ func (q *Queries) GetArticleBySlug(ctx context.Context, slug string) (Article, e
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listAllArticles = `-- name: ListAllArticles :many
+SELECT
+    id, slug, title, description, contents, cover_image, published_at,
+    tags, category_id, status, type, estimated_read_time, created_at
+FROM articles
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAllArticles(ctx context.Context) ([]Article, error) {
+	rows, err := q.db.Query(ctx, listAllArticles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Article
+	for rows.Next() {
+		var i Article
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Description,
+			&i.Contents,
+			&i.CoverImage,
+			&i.PublishedAt,
+			&i.Tags,
+			&i.CategoryID,
+			&i.Status,
+			&i.Type,
+			&i.EstimatedReadTime,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPublishedArticles = `-- name: ListPublishedArticles :many
@@ -103,4 +229,73 @@ func (q *Queries) ListPublishedArticles(ctx context.Context) ([]Article, error) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateArticle = `-- name: UpdateArticle :one
+UPDATE articles
+SET
+    slug = $1,
+    title = $2,
+    description = $3,
+    contents = $4,
+    cover_image = $5,
+    published_at = $6,
+    tags = $7,
+    category_id = $8,
+    status = $9,
+    type = $10,
+    estimated_read_time = $11
+WHERE id = $12
+RETURNING
+    id, slug, title, description, contents, cover_image, published_at,
+    tags, category_id, status, type, estimated_read_time, created_at
+`
+
+type UpdateArticleParams struct {
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+	ID                pgtype.UUID        `json:"id"`
+}
+
+func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error) {
+	row := q.db.QueryRow(ctx, updateArticle,
+		arg.Slug,
+		arg.Title,
+		arg.Description,
+		arg.Contents,
+		arg.CoverImage,
+		arg.PublishedAt,
+		arg.Tags,
+		arg.CategoryID,
+		arg.Status,
+		arg.Type,
+		arg.EstimatedReadTime,
+		arg.ID,
+	)
+	var i Article
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Description,
+		&i.Contents,
+		&i.CoverImage,
+		&i.PublishedAt,
+		&i.Tags,
+		&i.CategoryID,
+		&i.Status,
+		&i.Type,
+		&i.EstimatedReadTime,
+		&i.CreatedAt,
+	)
+	return i, err
 }

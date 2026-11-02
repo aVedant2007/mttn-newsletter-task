@@ -24,6 +24,20 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /articles", api.ListPublishedArticles(queries))
+	mux.Handle("POST /articles", api.CreateArticle(queries))
+	mux.Handle("GET /articles/{slug}", api.GetArticleBySlug(queries))
+	mux.Handle("GET /articles/all", api.ListAllArticles(queries))
+	mux.Handle("PUT /articles/{id}", api.UpdateArticle(queries))
+	mux.Handle("DELETE /articles/{id}", api.DeleteArticle(queries))
+
+	mux.Handle("GET /categories", api.ListCategories(queries))
+	mux.Handle("POST /categories", api.CreateCategory(queries))
+
+	mux.Handle("POST /subscribe", api.Subscribe(queries))
+	mux.Handle("GET /subscribers", api.ListSubscribers(queries))
+
+	mux.Handle("GET /articles/{id}/comments", api.ListCommentsForArticle(queries))
+	mux.Handle("POST /articles/{id}/comments", api.CreateComment(queries))
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Welcome to the Newsletter Backend!")
