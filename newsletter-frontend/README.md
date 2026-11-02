@@ -16,6 +16,10 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+Set `NEWSLETTER_API_URL` in `.env.local` to the Go backend URL (for local development, `http://localhost:8080`). The example value is in `.env.example`.
+
+Use **Write** in the site navigation to open `/admin/articles/new`. The composer can save a draft or publish an article immediately; publishing requires an author, title, slug, description, and body.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

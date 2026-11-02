@@ -4,6 +4,7 @@ SELECT
     id,
     slug,
     title,
+    author,
     description,
     contents,
     cover_image,
@@ -24,6 +25,7 @@ SELECT
     id,
     slug,
     title,
+    author,
     description,
     contents,
     cover_image,
@@ -36,12 +38,15 @@ SELECT
     created_at
 FROM articles
 WHERE slug = $1
+  AND status = 'published'
+  AND published_at IS NOT NULL
 LIMIT 1;
 
 -- name: CreateArticle :one
 INSERT INTO articles (
     slug,
     title,
+    author,
     description,
     contents,
     cover_image,
@@ -53,15 +58,15 @@ INSERT INTO articles (
     estimated_read_time
 )
 VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 )
 RETURNING
-    id, slug, title, description, contents, cover_image, published_at,
+    id, slug, title, author, description, contents, cover_image, published_at,
     tags, category_id, status, type, estimated_read_time, created_at;
 
 -- name: ListAllArticles :many
 SELECT
-    id, slug, title, description, contents, cover_image, published_at,
+    id, slug, title, author, description, contents, cover_image, published_at,
     tags, category_id, status, type, estimated_read_time, created_at
 FROM articles
 ORDER BY created_at DESC;
@@ -72,6 +77,7 @@ UPDATE articles
 SET
     slug = sqlc.arg(slug),
     title = sqlc.arg(title),
+    author = sqlc.arg(author),
     description = sqlc.arg(description),
     contents = sqlc.arg(contents),
     cover_image = sqlc.arg(cover_image),
@@ -83,10 +89,10 @@ SET
     estimated_read_time = sqlc.arg(estimated_read_time)
 WHERE id = sqlc.arg(id)
 RETURNING
-    id, slug, title, description, contents, cover_image, published_at,
+    id, slug, title, author, description, contents, cover_image, published_at,
     tags, category_id, status, type, estimated_read_time, created_at;
 
 
 -- name: DeleteArticle :execrows
 DELETE FROM articles
-WHERE id = sqlc.arg(id); 
+WHERE id = sqlc.arg(id);

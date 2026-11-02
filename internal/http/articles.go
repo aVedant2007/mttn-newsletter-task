@@ -21,6 +21,7 @@ type ArticleResponse struct {
 	ID                pgtype.UUID        `json:"id"`
 	Slug              string             `json:"slug"`
 	Title             string             `json:"title"`
+	Author            string             `json:"author"`
 	Description       string             `json:"description"`
 	Contents          json.RawMessage    `json:"contents"`
 	CoverImage        pgtype.Text        `json:"cover_image"`
@@ -55,6 +56,7 @@ func ListPublishedArticles(queries *db.Queries) http.HandlerFunc {
 				ID:                article.ID,
 				Slug:              article.Slug,
 				Title:             article.Title,
+				Author:            article.Author,
 				Description:       article.Description,
 				Contents:          json.RawMessage(article.Contents),
 				CoverImage:        article.CoverImage,
@@ -85,6 +87,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 type CreateArticleRequest struct {
 	Slug              string          `json:"slug"`
 	Title             string          `json:"title"`
+	Author            string          `json:"author"`
 	Description       string          `json:"description"`
 	Contents          json.RawMessage `json:"contents"`
 	CoverImage        *string         `json:"cover_image"`
@@ -110,17 +113,18 @@ func CreateArticle(queries *db.Queries) http.HandlerFunc {
 		// Trim whitespace from text fields.
 		request.Slug = strings.TrimSpace(request.Slug)
 		request.Title = strings.TrimSpace(request.Title)
+		request.Author = strings.TrimSpace(request.Author)
 		request.Description = strings.TrimSpace(request.Description)
 		request.Status = strings.TrimSpace(request.Status)
 		request.Type = strings.TrimSpace(request.Type)
 
 		// Validate required fields.
-		if request.Slug == "" || request.Title == "" ||
+		if request.Slug == "" || request.Title == "" || request.Author == "" ||
 			request.Description == "" || len(request.Contents) == 0 ||
 			request.Status == "" || request.Type == "" ||
 			request.EstimatedReadTime <= 0 {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "slug, title, description, contents, status, type, and positive estimated_read_time are required",
+				"error": "slug, title, author, description, contents, status, type, and positive estimated_read_time are required",
 			})
 			return
 		}
@@ -174,6 +178,7 @@ func CreateArticle(queries *db.Queries) http.HandlerFunc {
 		article, err := queries.CreateArticle(ctx, db.CreateArticleParams{
 			Slug:              request.Slug,
 			Title:             request.Title,
+			Author:            request.Author,
 			Description:       request.Description,
 			Contents:          request.Contents,
 			CoverImage:        coverImage,
@@ -215,6 +220,7 @@ func CreateArticle(queries *db.Queries) http.HandlerFunc {
 			ID:                article.ID,
 			Slug:              article.Slug,
 			Title:             article.Title,
+			Author:            article.Author,
 			Description:       article.Description,
 			Contents:          json.RawMessage(article.Contents),
 			CoverImage:        article.CoverImage,
@@ -258,6 +264,7 @@ func GetArticleBySlug(queries *db.Queries) http.HandlerFunc {
 			ID:                article.ID,
 			Slug:              article.Slug,
 			Title:             article.Title,
+			Author:            article.Author,
 			Description:       article.Description,
 			Contents:          json.RawMessage(article.Contents),
 			CoverImage:        article.CoverImage,
@@ -296,6 +303,7 @@ func ListAllArticles(queries *db.Queries) http.HandlerFunc {
 				ID:                article.ID,
 				Slug:              article.Slug,
 				Title:             article.Title,
+				Author:            article.Author,
 				Description:       article.Description,
 				Contents:          json.RawMessage(article.Contents),
 				CoverImage:        article.CoverImage,
@@ -334,16 +342,17 @@ func UpdateArticle(queries *db.Queries) http.HandlerFunc {
 
 		request.Slug = strings.TrimSpace(request.Slug)
 		request.Title = strings.TrimSpace(request.Title)
+		request.Author = strings.TrimSpace(request.Author)
 		request.Description = strings.TrimSpace(request.Description)
 		request.Status = strings.TrimSpace(request.Status)
 		request.Type = strings.TrimSpace(request.Type)
 
-		if request.Slug == "" || request.Title == "" ||
+		if request.Slug == "" || request.Title == "" || request.Author == "" ||
 			request.Description == "" || len(request.Contents) == 0 ||
 			request.Status == "" || request.Type == "" ||
 			request.EstimatedReadTime <= 0 {
 			writeJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "required article fields are missing",
+				"error": "slug, title, author, description, contents, status, type, and positive estimated_read_time are required",
 			})
 			return
 		}
@@ -388,6 +397,7 @@ func UpdateArticle(queries *db.Queries) http.HandlerFunc {
 			ID:                articleID,
 			Slug:              request.Slug,
 			Title:             request.Title,
+			Author:            request.Author,
 			Description:       request.Description,
 			Contents:          request.Contents,
 			CoverImage:        coverImage,
@@ -426,6 +436,7 @@ func UpdateArticle(queries *db.Queries) http.HandlerFunc {
 			ID:                article.ID,
 			Slug:              article.Slug,
 			Title:             article.Title,
+			Author:            article.Author,
 			Description:       article.Description,
 			Contents:          json.RawMessage(article.Contents),
 			CoverImage:        article.CoverImage,

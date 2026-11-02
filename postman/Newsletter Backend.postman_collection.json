@@ -1,0 +1,148 @@
+{
+  "info": {
+    "_postman_id": "b54b2b6d-4ed0-4ca9-980f-c97a5c3b9f32",
+    "name": "Newsletter Backend",
+    "description": "Requests for evaluating the Newsletter Go API. Set collection variables after creating a category or article where needed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "categoryId", "value": "replace-with-category-uuid" },
+    { "key": "articleId", "value": "replace-with-article-uuid" },
+    { "key": "articleSlug", "value": "replace-with-article-slug" },
+    { "key": "subscriberEmail", "value": "reader@example.com" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "API health",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/health" }
+        },
+        {
+          "name": "Database health",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/health/db" }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List categories",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/categories" }
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman Test {{$timestamp}}\",\n  \"slug\": \"postman-test-{{$timestamp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/categories"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Articles",
+      "item": [
+        {
+          "name": "List published articles",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/articles" }
+        },
+        {
+          "name": "List all articles including drafts",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/articles/all" }
+        },
+        {
+          "name": "Get article by slug",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/articles/{{articleSlug}}" }
+        },
+        {
+          "name": "Create published article",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"postman-evaluation-{{$timestamp}}\",\n  \"title\": \"Postman Evaluation Article\",\n  \"author\": \"Evaluation Author\",\n  \"description\": \"A sample article created from Postman.\",\n  \"contents\": {\n    \"type\": \"doc\",\n    \"content\": [\n      { \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": \"This is a sample paragraph in Tiptap JSON.\" }] }\n    ]\n  },\n  \"cover_image\": null,\n  \"published_at\": \"{{$isoTimestamp}}\",\n  \"tags\": [\"evaluation\", \"postman\"],\n  \"category_id\": null,\n  \"status\": \"published\",\n  \"type\": \"newsletter\",\n  \"estimated_read_time\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/articles"
+          },
+          "description": "After a successful response, copy its id and slug into the articleId and articleSlug collection variables. The sample article has no category; category_id is optional."
+        },
+        {
+          "name": "Create draft article",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"postman-draft-{{$timestamp}}\",\n  \"title\": \"Postman Draft\",\n  \"author\": \"Evaluation Author\",\n  \"description\": \"A draft is returned by /articles/all, not /articles.\",\n  \"contents\": { \"type\": \"doc\", \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": \"Draft content.\" }] }] },\n  \"cover_image\": null,\n  \"published_at\": null,\n  \"tags\": [],\n  \"category_id\": null,\n  \"status\": \"draft\",\n  \"type\": \"newsletter\",\n  \"estimated_read_time\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/articles"
+          }
+        },
+        {
+          "name": "Update article",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"postman-evaluation-updated-{{$timestamp}}\",\n  \"title\": \"Updated Postman Article\",\n  \"author\": \"Evaluation Author\",\n  \"description\": \"Updated article description.\",\n  \"contents\": { \"type\": \"doc\", \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": \"Updated Tiptap content.\" }] }] },\n  \"cover_image\": null,\n  \"published_at\": \"{{$isoTimestamp}}\",\n  \"tags\": [\"updated\"],\n  \"category_id\": null,\n  \"status\": \"published\",\n  \"type\": \"newsletter\",\n  \"estimated_read_time\": 4\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/articles/{{articleId}}"
+          },
+          "description": "Update requires the full required article payload. Change articleId to an existing article UUID."
+        },
+        {
+          "name": "Delete article",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/articles/{{articleId}}" },
+          "description": "Permanently deletes this article and cascades deletion to its comments. Use only with a test article."
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "List comments for article",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/articles/{{articleId}}/comments" }
+        },
+        {
+          "name": "Add comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"author_name\": \"Postman Reader\",\n  \"content\": \"A sample comment created from Postman.\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/articles/{{articleId}}/comments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscribers",
+      "item": [
+        {
+          "name": "Subscribe",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{subscriberEmail}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/subscribe"
+          },
+          "description": "Use a new email each time; duplicate addresses return 409 Conflict."
+        },
+        {
+          "name": "List subscribers",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/subscribers" }
+        }
+      ]
+    }
+  ]
+}

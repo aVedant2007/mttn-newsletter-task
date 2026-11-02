@@ -22,6 +22,7 @@ type Article struct {
 	Type              string             `json:"type"`
 	EstimatedReadTime int32              `json:"estimated_read_time"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	Author            string             `json:"author"`
 }
 
 type Category struct {

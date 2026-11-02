@@ -15,6 +15,7 @@ const createArticle = `-- name: CreateArticle :one
 INSERT INTO articles (
     slug,
     title,
+    author,
     description,
     contents,
     cover_image,
@@ -26,16 +27,17 @@ INSERT INTO articles (
     estimated_read_time
 )
 VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 )
 RETURNING
-    id, slug, title, description, contents, cover_image, published_at,
+    id, slug, title, author, description, contents, cover_image, published_at,
     tags, category_id, status, type, estimated_read_time, created_at
 `
 
 type CreateArticleParams struct {
 	Slug              string             `json:"slug"`
 	Title             string             `json:"title"`
+	Author            string             `json:"author"`
 	Description       string             `json:"description"`
 	Contents          []byte             `json:"contents"`
 	CoverImage        pgtype.Text        `json:"cover_image"`
@@ -47,10 +49,28 @@ type CreateArticleParams struct {
 	EstimatedReadTime int32              `json:"estimated_read_time"`
 }
 
-func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error) {
+type CreateArticleRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Author            string             `json:"author"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (CreateArticleRow, error) {
 	row := q.db.QueryRow(ctx, createArticle,
 		arg.Slug,
 		arg.Title,
+		arg.Author,
 		arg.Description,
 		arg.Contents,
 		arg.CoverImage,
@@ -61,11 +81,12 @@ func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (A
 		arg.Type,
 		arg.EstimatedReadTime,
 	)
-	var i Article
+	var i CreateArticleRow
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
 		&i.Title,
+		&i.Author,
 		&i.Description,
 		&i.Contents,
 		&i.CoverImage,
@@ -98,6 +119,7 @@ SELECT
     id,
     slug,
     title,
+    author,
     description,
     contents,
     cover_image,
@@ -110,16 +132,36 @@ SELECT
     created_at
 FROM articles
 WHERE slug = $1
+  AND status = 'published'
+  AND published_at IS NOT NULL
 LIMIT 1
 `
 
-func (q *Queries) GetArticleBySlug(ctx context.Context, slug string) (Article, error) {
+type GetArticleBySlugRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Author            string             `json:"author"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetArticleBySlug(ctx context.Context, slug string) (GetArticleBySlugRow, error) {
 	row := q.db.QueryRow(ctx, getArticleBySlug, slug)
-	var i Article
+	var i GetArticleBySlugRow
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
 		&i.Title,
+		&i.Author,
 		&i.Description,
 		&i.Contents,
 		&i.CoverImage,
@@ -136,25 +178,43 @@ func (q *Queries) GetArticleBySlug(ctx context.Context, slug string) (Article, e
 
 const listAllArticles = `-- name: ListAllArticles :many
 SELECT
-    id, slug, title, description, contents, cover_image, published_at,
+    id, slug, title, author, description, contents, cover_image, published_at,
     tags, category_id, status, type, estimated_read_time, created_at
 FROM articles
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListAllArticles(ctx context.Context) ([]Article, error) {
+type ListAllArticlesRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Author            string             `json:"author"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListAllArticles(ctx context.Context) ([]ListAllArticlesRow, error) {
 	rows, err := q.db.Query(ctx, listAllArticles)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Article
+	var items []ListAllArticlesRow
 	for rows.Next() {
-		var i Article
+		var i ListAllArticlesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Slug,
 			&i.Title,
+			&i.Author,
 			&i.Description,
 			&i.Contents,
 			&i.CoverImage,
@@ -181,6 +241,7 @@ SELECT
     id,
     slug,
     title,
+    author,
     description,
     contents,
     cover_image,
@@ -197,19 +258,37 @@ WHERE status = 'published'
 ORDER BY published_at DESC
 `
 
-func (q *Queries) ListPublishedArticles(ctx context.Context) ([]Article, error) {
+type ListPublishedArticlesRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Author            string             `json:"author"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListPublishedArticles(ctx context.Context) ([]ListPublishedArticlesRow, error) {
 	rows, err := q.db.Query(ctx, listPublishedArticles)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Article
+	var items []ListPublishedArticlesRow
 	for rows.Next() {
-		var i Article
+		var i ListPublishedArticlesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Slug,
 			&i.Title,
+			&i.Author,
 			&i.Description,
 			&i.Contents,
 			&i.CoverImage,
@@ -236,24 +315,26 @@ UPDATE articles
 SET
     slug = $1,
     title = $2,
-    description = $3,
-    contents = $4,
-    cover_image = $5,
-    published_at = $6,
-    tags = $7,
-    category_id = $8,
-    status = $9,
-    type = $10,
-    estimated_read_time = $11
-WHERE id = $12
+    author = $3,
+    description = $4,
+    contents = $5,
+    cover_image = $6,
+    published_at = $7,
+    tags = $8,
+    category_id = $9,
+    status = $10,
+    type = $11,
+    estimated_read_time = $12
+WHERE id = $13
 RETURNING
-    id, slug, title, description, contents, cover_image, published_at,
+    id, slug, title, author, description, contents, cover_image, published_at,
     tags, category_id, status, type, estimated_read_time, created_at
 `
 
 type UpdateArticleParams struct {
 	Slug              string             `json:"slug"`
 	Title             string             `json:"title"`
+	Author            string             `json:"author"`
 	Description       string             `json:"description"`
 	Contents          []byte             `json:"contents"`
 	CoverImage        pgtype.Text        `json:"cover_image"`
@@ -266,10 +347,28 @@ type UpdateArticleParams struct {
 	ID                pgtype.UUID        `json:"id"`
 }
 
-func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error) {
+type UpdateArticleRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Author            string             `json:"author"`
+	Description       string             `json:"description"`
+	Contents          []byte             `json:"contents"`
+	CoverImage        pgtype.Text        `json:"cover_image"`
+	PublishedAt       pgtype.Timestamptz `json:"published_at"`
+	Tags              []string           `json:"tags"`
+	CategoryID        pgtype.UUID        `json:"category_id"`
+	Status            string             `json:"status"`
+	Type              string             `json:"type"`
+	EstimatedReadTime int32              `json:"estimated_read_time"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (UpdateArticleRow, error) {
 	row := q.db.QueryRow(ctx, updateArticle,
 		arg.Slug,
 		arg.Title,
+		arg.Author,
 		arg.Description,
 		arg.Contents,
 		arg.CoverImage,
@@ -281,11 +380,12 @@ func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (A
 		arg.EstimatedReadTime,
 		arg.ID,
 	)
-	var i Article
+	var i UpdateArticleRow
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
 		&i.Title,
+		&i.Author,
 		&i.Description,
 		&i.Contents,
 		&i.CoverImage,

@@ -79,6 +79,13 @@ psql --version
 sqlc version
 ```
 
+Apply migrations in order for a new database. For an existing database that already has `001_init.sql`, apply `002_article_author.sql` before creating or updating articles through the API:
+
+```sh
+psql "$DATABASE_URL" -f db/migrations/001_init.sql
+psql "$DATABASE_URL" -f db/migrations/002_article_author.sql
+```
+
 ### 4. Database Schema
 
 #### `articles`
@@ -88,6 +95,7 @@ sqlc version
 | `id` | UUID (PK) | Auto-generated |
 | `slug` | text (unique) | URL-friendly string |
 | `title` | text | Required |
+| `author` | text | Required author name |
 | `description` | text | Required |
 | `contents` | JSONB | Tiptap content (required) |
 | `cover_image` | text (nullable) | Optional image URL |
